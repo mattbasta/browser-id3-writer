@@ -1,8 +1,9 @@
 {
-  "name": "browser-id3-writer",
-  "version": "3.0.3",
+  "name": "@mattbasta/browser-id3-writer",
+  "version": "3.0.4",
   "description": "Pure JS library for writing ID3 tag to MP3 files in browsers and Node.js",
   "main": "dist/browser-id3-writer.js",
+  "jsnext:main": "src/browser-id3-writer.js",
   "scripts": {
     "lint": "eslint -c tools/.eslintrc.js src/**/*.js",
     "build": "npm run build:concat && npm run build:transpile && npm run build:wrap && npm run build:compress",

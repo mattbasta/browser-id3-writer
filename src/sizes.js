@@ -1,3 +1,5 @@
+import {getMimeType} from './signatures';
+
 export function getNumericFrameSize(frameSize) {
     const headerSize = 10;
     const encodingSize = 1;
@@ -99,4 +101,27 @@ export function getUrlLinkFrameSize(urlSize) {
 
     return headerSize +
         urlSize;
+}
+
+export function getChapterFrameSize(idSize, subFrames) {
+    const headerSize = 10;
+    const requiredFrameSize = (
+        idSize + 1 +
+        16
+    );
+    const subFrameSizes = subFrames.map(x => x.size).reduce((acc, cur) => acc + cur, 0);
+    return headerSize + requiredFrameSize + subFrameSizes;
+}
+
+
+export function getToCFrameSize(idSize, ids, subFrames) {
+    const headerSize = 10;
+    const requiredFrameSize = (
+        idSize + 1 + // id
+        1 + // flags (one byte)
+        1 // entry count
+    );
+    const idsSize = ids.map(x => x.length + 1).reduce((acc, cur) => acc + cur, 0);
+    const subFrameSizes = subFrames.map(x => x.size).reduce((acc, cur) => acc + cur, 0);
+    return headerSize + requiredFrameSize + idsSize + subFrameSizes;
 }
