@@ -11,7 +11,7 @@
     "build:transpile": "babel dist/browser-id3-writer.js -o dist/browser-id3-writer.js && node tools/show_dist_size",
     "build:wrap": "rollup -f umd -n ID3Writer -i dist/browser-id3-writer.js -o dist/browser-id3-writer.js && node tools/show_dist_size",
     "build:compress": "uglifyjs dist/browser-id3-writer.js -o dist/browser-id3-writer.js -m -c && node tools/show_dist_size",
-    "test": "npm run lint && npm run build && npm run test:node && npm run test:browser",
+    "test": "npm run lint && npm run build && npm run test:node",
     "test:browser": "karma start tools/karma.conf.js",
     "test:node": "mocha -c test/node.js",
     "preversion": "npm test",
