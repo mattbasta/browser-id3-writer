@@ -36,10 +36,10 @@ Here is an online demonstration: [egoroof.ru/browser-id3-writer/](https://egoroo
 
 ## Installation
 
-For browsers you can include library via [unpkg](https://unpkg.com/) CDN (2.2 KiB gzip) or save it to local machine:
+For browsers you can include library via [unpkg](https://unpkg.com/) CDN (2.4 KiB gzip) or save it to local machine:
 
 ```html
-<script src="https://unpkg.com/browser-id3-writer@3.0.3" crossorigin="anonymous" integrity="sha384-tDtam1j4DM51JscQjP7GuDyRf0CQXCSdavmuHpOb08OJ8s8YxwFpBhRhmMMdbCpM"></script>
+<script src="https://unpkg.com/browser-id3-writer@3.0.5" crossorigin="anonymous" integrity="sha384-LQPv+uCyvmC0ex03TDUSkCCuIQTXkYC0yN1D6LSqErAr3Uuh7I5XVaGGF/vej5NK"></script>
 ```
 
 For Node.js and browser module loaders like `webpack`, `browserify`, etc. install it via [npm](https://www.npmjs.com/):
