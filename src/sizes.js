@@ -1,5 +1,3 @@
-import {getMimeType} from './signatures';
-
 export function getNumericFrameSize(frameSize) {
     const headerSize = 10;
     const encodingSize = 1;

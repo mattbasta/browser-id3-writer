@@ -423,7 +423,7 @@ export default class ID3Writer {
                     break;
                 }
                 case 'CHAP': {
-                    writeBytes = encodeWindows1252(frame.id + '\0');
+                    writeBytes = encodeWindows1252(`${frame.id}\0`);
                     bufferWriter.set(writeBytes, offset);
                     offset += writeBytes.length;
 
@@ -447,7 +447,7 @@ export default class ID3Writer {
                     break;
                 }
                 case 'CTOC': {
-                    writeBytes = encodeWindows1252(frame.id + '\0');
+                    writeBytes = encodeWindows1252(`${frame.id}\0`);
                     bufferWriter.set(writeBytes, offset);
                     offset += writeBytes.length;
 
@@ -461,7 +461,7 @@ export default class ID3Writer {
                     offset += 1;
 
                     frame.childElementIds.forEach(id => {
-                        writeBytes = encodeWindows1252(id + '\0');
+                        writeBytes = encodeWindows1252(`${id}\0`);
                         bufferWriter.set(writeBytes, offset);
                         offset += writeBytes.length;
                     });
