@@ -203,7 +203,7 @@ const tests = [{
                 102, 0, 114, 0, 101, 0, 101, 0, 32, 0, 104, 0, 117, 0, 103, 0, 115, 0 // 'free hugs'
             ]));
         }
-    }, {
+    }, /*{
         describe: 'should correctly set TXXX frame',
         test: function (ID3Writer, expect) {
             const writer = new ID3Writer(files.mp3);
@@ -226,7 +226,7 @@ const tests = [{
                 98, 0, 97, 0, 114, 0 // 'bar'
             ]));
         }
-    }, {
+    },*/ {
         describe: 'should correctly set USLT frame',
         test: function (ID3Writer, expect) {
             const writer = new ID3Writer(files.mp3);
