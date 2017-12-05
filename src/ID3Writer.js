@@ -91,6 +91,18 @@ export default class ID3Writer {
         });
     }
 
+    _setUserURLFrame(frameName, description, value) {
+        const descriptionString = description.toString();
+        const valueString = value.toString();
+
+        this.frames.push({
+            name: frameName,
+            description: descriptionString,
+            value: valueString,
+            size: 10 + 1 + description.length + 1 + value.length,
+        });
+    }
+
     _setUrlLinkFrame(name, url) {
         const urlString = url.toString();
 
@@ -98,18 +110,6 @@ export default class ID3Writer {
             name,
             value: urlString,
             size: getUrlLinkFrameSize(urlString.length)
-        });
-    }
-
-    _setUserUrlLinkFrame(name, description, url) {
-        const descriptionString = description.toString();
-        const urlString = url.toString();
-
-        this.frames.push({
-            name,
-            description: descriptionString,
-            value: urlString,
-            size: getUrlLinkFrameSize(description.length, urlString.length)
         });
     }
 
@@ -251,7 +251,13 @@ export default class ID3Writer {
                 this._setPictureFrame(frameValue.type, frameValue.data, frameValue.description);
                 break;
             }
-            case 'WXXX':
+            case 'WXXX': {
+                if (typeof frameValue !== 'object' || !('description' in frameValue) || !('value' in frameValue)) {
+                    throw new Error('WXXX frame value should be an object with keys description and value');
+                }
+                this._setUserURLFrame(frameName, frameValue.description, frameValue.value);
+                break;
+            }
             case 'TXXX': { // user defined text information
                 if (typeof frameValue !== 'object' || !('description' in frameValue) || !('value' in frameValue)) {
                     throw new Error('TXXX frame value should be an object with keys description and value');
@@ -392,8 +398,25 @@ export default class ID3Writer {
                     offset += writeBytes.length;
                     break;
                 }
-                case 'WXXX':
                 case 'TXXX':
+                case 'WXXX': {
+                    writeBytes = [1]; // encoding
+                    bufferWriter.set(writeBytes, offset);
+                    offset += writeBytes.length;
+
+                    writeBytes = encodeWindows1252(frame.description); // content descriptor
+                    bufferWriter.set(writeBytes, offset);
+                    offset += writeBytes.length;
+
+                    writeBytes = [0]; // separator
+                    bufferWriter.set(writeBytes, offset);
+                    offset += writeBytes.length;
+
+                    writeBytes = encodeWindows1252(frame.value); // frame value
+                    bufferWriter.set(writeBytes, offset);
+                    offset += writeBytes.length;
+                    break;
+                }
                 case 'USLT':
                 case 'COMM': {
                     writeBytes = [1]; // encoding
@@ -498,6 +521,8 @@ export default class ID3Writer {
                     break;
                 }
             }
+
+            // offset = startOffset + frame.size;
         };
         this.frames.forEach(writeFrame);
 
