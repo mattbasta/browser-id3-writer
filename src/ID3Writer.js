@@ -79,12 +79,12 @@ export default class ID3Writer {
         });
     }
 
-    _setUserStringFrame(description, value) {
+    _setUserStringFrame(frameName, description, value) {
         const descriptionString = description.toString();
         const valueString = value.toString();
 
         this.frames.push({
-            name: 'TXXX',
+            name: frameName,
             description: descriptionString,
             value: valueString,
             size: getUserStringFrameSize(descriptionString.length, valueString.length)
@@ -101,6 +101,18 @@ export default class ID3Writer {
         });
     }
 
+    _setUserUrlLinkFrame(name, description, url) {
+        const descriptionString = description.toString();
+        const urlString = url.toString();
+
+        this.frames.push({
+            name,
+            description: descriptionString,
+            value: urlString,
+            size: getUrlLinkFrameSize(description.length, urlString.length)
+        });
+    }
+
     _setChapterFrame(chapter) {
         const subFrames = Object.entries(chapter.subFrames)
             .map(([name, value]) => {
@@ -108,6 +120,13 @@ export default class ID3Writer {
                     case 'APIC':
                         this._validateAPIC(value);
                         return this._createPictureFrame(value.type, value.data, value.description);
+                    case 'WXXX':
+                        return {
+                            name,
+                            description: value.description,
+                            value: value.value,
+                            size: getUrlLinkFrameSize(value.description.length, value.value.length),
+                        };
                     case 'TIT2':
                     case 'TIT3':
                         return {
@@ -120,6 +139,7 @@ export default class ID3Writer {
                 }
             })
             .filter(x => x);
+
         this.frames.push({
             name: 'CHAP',
             id: chapter.id,
@@ -136,6 +156,13 @@ export default class ID3Writer {
         const subFrames = Object.entries(toc.subFrames)
             .map(([name, value]) => {
                 switch (name) {
+                    case 'WXXX':
+                        return {
+                            name,
+                            description: value.description,
+                            value: value.value,
+                            size: getUrlLinkFrameSize(value.description.length, value.value.length),
+                        };
                     case 'TIT2':
                     case 'TIT3':
                         return {
@@ -229,7 +256,7 @@ export default class ID3Writer {
                 if (typeof frameValue !== 'object' || !('description' in frameValue) || !('value' in frameValue)) {
                     throw new Error('TXXX frame value should be an object with keys description and value');
                 }
-                this._setUserStringFrame(frameValue.description, frameValue.value);
+                this._setUserStringFrame(frameName, frameValue.description, frameValue.value);
                 break;
             }
             case 'TKEY': { // musical key in which the sound starts
@@ -365,6 +392,7 @@ export default class ID3Writer {
                     offset += writeBytes.length;
                     break;
                 }
+                case 'WXXX':
                 case 'TXXX':
                 case 'USLT':
                 case 'COMM': {
