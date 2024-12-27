@@ -15,6 +15,7 @@ import {
   getCommentFrameSize,
   getUserStringFrameSize,
   getUrlLinkFrameSize,
+  getUserUrlLinkFrameSize,
   getPrivateFrameSize,
   getPairedTextFrameSize,
   getSynchronisedLyricsFrameSize,
@@ -136,6 +137,20 @@ export class ID3Writer {
     });
   }
 
+  _setUserURLFrame(description, value) {
+    const descriptionString = description.toString();
+    const valueString = value.toString();
+
+    this.frames.push({
+      name: 'WXXX',
+      description: descriptionString,
+      // TODO: The spec says `value` here must be ISO-8859-1 (latin1).
+      // We don't have a good way of ensuring that here.
+      value: valueString,
+      size: 10 + 1 + description.length + 1 + value.length,
+    });
+  }
+
   _setUrlLinkFrame(name, url) {
     const urlString = url.toString();
 
@@ -192,6 +207,26 @@ export class ID3Writer {
               name,
               value,
               size: getStringFrameSize(value.length),
+            };
+          case 'WXXX':
+            return {
+              name,
+              description: value.description,
+              value: value.value,
+              size: getUserUrlLinkFrameSize(
+                value.description.length,
+                value.value.length,
+              ),
+            };
+          case 'TXXX':
+            return {
+              name,
+              description: value.description,
+              value: value.value,
+              size: getStringFrameSize(
+                value.description.length,
+                value.value.length,
+              ),
             };
           default:
             return null;
@@ -346,7 +381,20 @@ export class ID3Writer {
         );
         break;
       }
-      case 'WXXX':
+      case 'WXXX': {
+        // user defined url information
+        if (
+          typeof frameValue !== 'object' ||
+          !('description' in frameValue) ||
+          !('value' in frameValue)
+        ) {
+          throw new Error(
+            'WXXX frame value should be an object with keys description and value',
+          );
+        }
+        this._setUserURLFrame(frameValue.description, frameValue.value);
+        break;
+      }
       case 'TXXX': {
         // user defined text information
         if (
@@ -567,6 +615,25 @@ export class ID3Writer {
           offset += writeBytes.length;
 
           writeBytes = encodeUtf16le(frame.value); // frame value
+          bufferWriter.set(writeBytes, offset);
+          offset += writeBytes.length;
+          break;
+        }
+        case 'WXXX': {
+          writeBytes = [1]; // encoding
+          writeBytes = writeBytes.concat(BOM); // BOM for content descriptor
+          bufferWriter.set(writeBytes, offset);
+          offset += writeBytes.length;
+
+          writeBytes = encodeUtf16le(frame.description); // content descriptor
+          bufferWriter.set(writeBytes, offset);
+          offset += writeBytes.length;
+
+          writeBytes = [0]; // separator
+          bufferWriter.set(writeBytes, offset);
+          offset += writeBytes.length;
+
+          writeBytes = encodeWindows1252(frame.value); // frame value
           bufferWriter.set(writeBytes, offset);
           offset += writeBytes.length;
           break;
