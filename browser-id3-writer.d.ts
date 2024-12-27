@@ -218,6 +218,29 @@ declare module 'browser-id3-writer' {
       },
     ): this;
 
+    setFrame(
+      id: 'CHAP',
+      value: {
+        readonly id: string;
+        readonly startOffset: number;
+        readonly endOffset: number;
+        readonly startTime: number;
+        readonly endTime: number;
+        readonly subFrames: readonly object[];
+      },
+    ): this;
+
+    setFrame(
+      id: 'CTOC',
+      value: {
+        readonly id: string;
+        readonly ordered: boolean;
+        readonly topLevel: boolean;
+        readonly childElementIds: readonly string[];
+        readonly subFrames: readonly object[];
+      },
+    ): this;
+
     setFrame(id: 'IPLS', value: readonly (readonly [string, string])[]): this;
 
     setFrame(
