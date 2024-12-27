@@ -6,6 +6,8 @@ import {
   uint32ToUint8Array,
 } from './transform.mjs';
 import {
+  getChapterFrameSize,
+  getToCFrameSize,
   getNumericFrameSize,
   getStringFrameSize,
   getPictureFrameSize,
@@ -45,6 +47,16 @@ export class ID3Writer {
   }
 
   _setPictureFrame(pictureType, data, description, useUnicodeEncoding) {
+    this.frames.push(
+      this._createPictureFrame(
+        pictureType,
+        data,
+        description,
+        useUnicodeEncoding,
+      ),
+    );
+  }
+  _createPictureFrame(pictureType, data, description, useUnicodeEncoding) {
     const mimeType = getMimeType(new Uint8Array(data));
     const descriptionString = description.toString();
 
@@ -54,7 +66,7 @@ export class ID3Writer {
     if (!description) {
       useUnicodeEncoding = false;
     }
-    this.frames.push({
+    return {
       name: 'APIC',
       value: data,
       pictureType,
@@ -67,7 +79,7 @@ export class ID3Writer {
         descriptionString.length,
         useUnicodeEncoding,
       ),
-    });
+    };
   }
 
   _setLyricsFrame(language, description, lyrics) {
@@ -163,6 +175,84 @@ export class ID3Writer {
     });
   }
 
+  _setChapterFrame(chapter) {
+    const subFrames = Object.entries(chapter.subFrames)
+      .map(([name, value]) => {
+        switch (name) {
+          case 'APIC':
+            this._validateAPIC(value);
+            return this._createPictureFrame(
+              value.type,
+              value.data,
+              value.description,
+            );
+          case 'TIT2':
+          case 'TIT3':
+            return {
+              name,
+              value,
+              size: getStringFrameSize(value.length),
+            };
+          default:
+            return null;
+        }
+      })
+      .filter((x) => x);
+    this.frames.push({
+      name: 'CHAP',
+      id: chapter.id,
+      startTime: chapter.startTime,
+      endTime: chapter.endTime,
+      startOffset: chapter.startOffset,
+      endOffset: chapter.endOffset,
+      subFrames,
+      size: getChapterFrameSize(chapter.id.length, subFrames),
+    });
+  }
+
+  _setToCFrame(toc) {
+    const subFrames = Object.entries(toc.subFrames)
+      .map(([name, value]) => {
+        switch (name) {
+          case 'TIT2':
+          case 'TIT3':
+            return {
+              name,
+              value,
+              size: getStringFrameSize(value.length),
+            };
+          default:
+            return null;
+        }
+      })
+      .filter((x) => x);
+    this.frames.push({
+      name: 'CTOC',
+      id: toc.id,
+      ordered: toc.ordered,
+      topLevel: toc.topLevel,
+      childElementIds: toc.childElementIds,
+      subFrames,
+      size: getToCFrameSize(toc.id.length, toc.childElementIds, subFrames),
+    });
+  }
+
+  _validateAPIC(frameValue) {
+    if (
+      typeof frameValue !== 'object' ||
+      !('type' in frameValue) ||
+      !('data' in frameValue) ||
+      !('description' in frameValue)
+    ) {
+      throw new Error(
+        'APIC frame value should be an object with keys type, data and description',
+      );
+    }
+    if (frameValue.type < 0 || frameValue.type > 20) {
+      throw new Error('Incorrect APIC frame picture type');
+    }
+  }
+
   constructor(buffer) {
     if (!buffer || typeof buffer !== 'object' || !('byteLength' in buffer)) {
       throw new Error(
@@ -247,19 +337,7 @@ export class ID3Writer {
       }
       case 'APIC': {
         // song cover
-        if (
-          typeof frameValue !== 'object' ||
-          !('type' in frameValue) ||
-          !('data' in frameValue) ||
-          !('description' in frameValue)
-        ) {
-          throw new Error(
-            'APIC frame value should be an object with keys type, data and description',
-          );
-        }
-        if (frameValue.type < 0 || frameValue.type > 20) {
-          throw new Error('Incorrect APIC frame picture type');
-        }
+        this._validateAPIC(frameValue);
         this._setPictureFrame(
           frameValue.type,
           frameValue.data,
@@ -268,6 +346,7 @@ export class ID3Writer {
         );
         break;
       }
+      case 'WXXX':
       case 'TXXX': {
         // user defined text information
         if (
@@ -377,6 +456,16 @@ export class ID3Writer {
         );
         break;
       }
+      case 'CHAP': {
+        // Chapters
+        this._setChapterFrame(frameValue);
+        break;
+      }
+      case 'CTOC': {
+        // Table of contents
+        this._setToCFrame(frameValue);
+        break;
+      }
       default: {
         throw new Error(`Unsupported frame ${frameName}`);
       }
@@ -429,7 +518,7 @@ export class ID3Writer {
     bufferWriter.set(writeBytes, offset);
     offset += writeBytes.length;
 
-    this.frames.forEach((frame) => {
+    const writeFrame = (frame) => {
       writeBytes = encodeWindows1252(frame.name); // frame name
       bufferWriter.set(writeBytes, offset);
       offset += writeBytes.length;
@@ -628,8 +717,56 @@ export class ID3Writer {
           });
           break;
         }
+        case 'CHAP': {
+          writeBytes = encodeWindows1252(`${frame.id}\0`);
+          bufferWriter.set(writeBytes, offset);
+          offset += writeBytes.length;
+
+          writeBytes = uint32ToUint8Array(frame.startTime);
+          bufferWriter.set(writeBytes, offset);
+          offset += writeBytes.length;
+
+          writeBytes = uint32ToUint8Array(frame.endTime);
+          bufferWriter.set(writeBytes, offset);
+          offset += writeBytes.length;
+
+          writeBytes = uint32ToUint8Array(frame.startOffset);
+          bufferWriter.set(writeBytes, offset);
+          offset += writeBytes.length;
+
+          writeBytes = uint32ToUint8Array(frame.endOffset);
+          bufferWriter.set(writeBytes, offset);
+          offset += writeBytes.length;
+
+          frame.subFrames.forEach(writeFrame);
+          break;
+        }
+        case 'CTOC': {
+          writeBytes = encodeWindows1252(`${frame.id}\0`);
+          bufferWriter.set(writeBytes, offset);
+          offset += writeBytes.length;
+
+          bufferWriter.set(
+            [(frame.topLevel ? 2 : 0) | (frame.ordered ? 1 : 0)],
+            offset,
+          );
+          offset += 1;
+
+          bufferWriter.set([frame.childElementIds.length], offset);
+          offset += 1;
+
+          frame.childElementIds.forEach((id) => {
+            writeBytes = encodeWindows1252(`${id}\0`);
+            bufferWriter.set(writeBytes, offset);
+            offset += writeBytes.length;
+          });
+
+          frame.subFrames.forEach(writeFrame);
+          break;
+        }
       }
-    });
+    };
+    this.frames.forEach(writeFrame);
 
     offset += this.padding; // free space for rewriting
     bufferWriter.set(new Uint8Array(this.arrayBuffer), offset);

@@ -161,3 +161,28 @@ export function getSynchronisedLyricsFrameSize(lyrics, descriptionSize) {
     encodedLyricsSize
   );
 }
+
+export function getChapterFrameSize(idSize, subFrames) {
+  const headerSize = 10;
+  const requiredFrameSize = idSize + 1 + 16;
+  const subFrameSizes = subFrames
+    .map((x) => x.size)
+    .reduce((acc, cur) => acc + cur, 0);
+  return headerSize + requiredFrameSize + subFrameSizes;
+}
+
+export function getToCFrameSize(idSize, ids, subFrames) {
+  const headerSize = 10;
+  const requiredFrameSize =
+    idSize +
+    1 + // id
+    1 + // flags (one byte)
+    1; // entry count
+  const idsSize = ids
+    .map((x) => x.length + 1)
+    .reduce((acc, cur) => acc + cur, 0);
+  const subFrameSizes = subFrames
+    .map((x) => x.size)
+    .reduce((acc, cur) => acc + cur, 0);
+  return headerSize + requiredFrameSize + idsSize + subFrameSizes;
+}
