@@ -2,7 +2,7 @@
   "name": "browser-id3-writer",
   "version": "6.1.0",
   "description": "JavaScript library for writing ID3 tag to MP3 files in browsers and Node.js",
-  "main": "dist/browser-id3-writer.mjs",
+  "main": "src/ID3Writer.mjs",
   "types": "./browser-id3-writer.d.ts",
   "scripts": {
     "lint": "eslint src tools test",
@@ -32,12 +32,6 @@
     "library"
   ],
   "author": "egoroof",
-  "files": [
-    "LICENSE.md",
-    "README.md",
-    "browser-id3-writer.d.ts",
-    "dist/browser-id3-writer.mjs"
-  ],
   "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^9.11.1",
